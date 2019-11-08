@@ -1,0 +1,43 @@
+FROM python:3.6-stretch
+
+## CONFIGURE LOCALES
+RUN apt-get update && apt-get install -y locales && \
+       sed -i 's%^# en_US.UTF-8 UTF-8$%en_US.UTF-8 UTF-8%' /etc/locale.gen && \
+       locale-gen
+ENV LANG en_US.UTF-8
+
+
+## UPDATE REPOSITORIES, INSTALL PIP AND BUILD DEPENDENCIES
+RUN apt-get update && \
+	apt-get install -y  \
+   	zlib1g-dev    \
+	libpq-dev     \
+        libpcre3      \
+        libpcre3-dev  \
+        git           \
+        wget          \
+        curl          \
+        libjpeg62-turbo-dev \
+	python-dev 	\
+	python3-dev	\
+	default-libmysqlclient-dev	\
+	python-mysqldb 		\
+	vim 	
+
+
+RUN cd /tmp/ && git clone https://github.com/Normape/formalities-app.git  && \
+       pip install -r formalities-app/requirements.txt  	\
+                uwsgi 
+
+
+##COPY ENTRYPOINT SCRIPT
+COPY django-entrypoint.sh /docker-entrypoint.sh
+
+## CREATE A SPACE TO MOUNT DATA AND MOVE TO IT
+RUN mkdir /app
+WORKDIR /app
+
+## DO NOT RUN CELERY / GUNICORN AS ROOT
+RUN groupadd -g 1000 -r django && useradd -r -u 1000 -g django -s /bin/bash -m -d /home/django django 
+USER django
+
